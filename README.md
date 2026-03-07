@@ -6,6 +6,7 @@
 - SQLAlchemy persistence in PostgreSQL.
 - Idempotency using unique `event_id`.
 - `GET /api/v1/sessions/{user_id}` with pagination (`page`, `page_size`).
+- Mangum integration for AWS Lambda/API Gateway.
 
 ## Sample Webhook JSON
 ```json
@@ -38,7 +39,9 @@
    `pip install -r requirements.txt`
 2. Set database URL:
    `set DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/workouts`
-3. Start API:
+3. Optional startup schema creation toggle:
+   `set AUTO_CREATE_TABLES=true`
+4. Start API:
    `uvicorn main:app --reload`
 
 ## Run tests
@@ -49,4 +52,9 @@ Build image:
 `docker build -t workout-webhook-service .`
 
 Run container:
-`docker run -p 8000:8000 -e DATABASE_URL=postgresql+psycopg2://postgres:postgres@host.docker.internal:5432/workouts workout-webhook-service`
+`docker run -p 8000:8000 -e DATABASE_URL=postgresql+psycopg2://postgres:postgres@host.docker.internal:5432/workouts -e AUTO_CREATE_TABLES=true workout-webhook-service`
+
+## AWS Lambda (Mangum)
+- Lambda handler: `app.main.handler`
+- Alternate wrapper handler: `lambda_handler.handler`
+- Deploy behind API Gateway HTTP API and pass `DATABASE_URL` in Lambda environment variables.
