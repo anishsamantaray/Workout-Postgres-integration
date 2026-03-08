@@ -7,7 +7,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.database import Base, get_db
 from app.main import app
 
-# Ensure model metadata is registered before create_all.
+
 from app import models  # noqa: F401
 
 

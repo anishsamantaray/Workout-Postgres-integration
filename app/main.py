@@ -14,6 +14,9 @@ def init_db() -> None:
     if settings.AUTO_CREATE_TABLES:
         Base.metadata.create_all(bind=engine)
 
+@app.on_event("startup")
+def startup():
+    init_db()
 app.include_router(workout_router, prefix="/api/v1")
 
 # AWS Lambda entry point.
