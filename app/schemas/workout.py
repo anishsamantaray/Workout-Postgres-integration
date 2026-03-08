@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from typing import Optional
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -47,8 +47,6 @@ class WebhookIngestResponse(BaseModel):
 
 class SessionListResponse(BaseModel):
     user_id: str
-    page: int
     page_size: int
-    total_items: int
-    total_pages: int
+    next_cursor: Optional[dict]
     items: list[WorkoutSessionOut]

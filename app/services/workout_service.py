@@ -1,9 +1,10 @@
 import math
-
+from sqlalchemy import select, and_, or_
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-
+from datetime import datetime
+from typing import Optional
 from app.models import WorkoutSession
 from app.schemas.workout import WorkoutSessionIn
 
@@ -39,23 +40,42 @@ def create_workout_session(db: Session, payload: WorkoutSessionIn) -> tuple[Work
 
 
 def list_user_sessions(
-    db: Session, user_id: str, page: int, page_size: int
-) -> tuple[list[WorkoutSession], int, int]:
-    total_items = db.execute(
-        select(func.count(WorkoutSession.id)).where(WorkoutSession.user_id == user_id)
-    ).scalar_one()
-    total_pages = math.ceil(total_items / page_size) if total_items else 0
+    db: Session,
+    user_id: str,
+    cursor_started_at: Optional[datetime],
+    cursor_id: Optional[int],
+    page_size: int,
+):
 
-    offset = (page - 1) * page_size
-    items = (
-        db.execute(
-            select(WorkoutSession)
-            .where(WorkoutSession.user_id == user_id)
-            .order_by(WorkoutSession.started_at.desc())
-            .offset(offset)
-            .limit(page_size)
+    query = (
+        select(WorkoutSession)
+        .where(WorkoutSession.user_id == user_id)
+        .order_by(
+            WorkoutSession.started_at.desc(),
+            WorkoutSession.id.desc(),
         )
-        .scalars()
-        .all()
+        .limit(page_size)
     )
-    return items, total_items, total_pages
+
+    if cursor_started_at and cursor_id:
+        query = query.where(
+            or_(
+                WorkoutSession.started_at < cursor_started_at,
+                and_(
+                    WorkoutSession.started_at == cursor_started_at,
+                    WorkoutSession.id < cursor_id,
+                ),
+            )
+        )
+
+    items = db.execute(query).scalars().all()
+
+    next_cursor = None
+    if items:
+        last = items[-1]
+        next_cursor = {
+            "cursor_started_at": last.started_at,
+            "cursor_id": last.id,
+        }
+
+    return items, next_cursor
